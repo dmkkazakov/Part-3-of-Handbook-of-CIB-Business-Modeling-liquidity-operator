@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+title: "Corporate Credit as a Liquidity Operator: Synthetic Execution-Liquidity Graph Dataset"
+message: "If you use this dataset or code, please cite this repository."
+type: dataset
+authors:
+  - family-names: Kazakov
+    given-names: Dmitry
+year: 2026
+license: MIT
+keywords:
+  - corporate lending
+  - liquidity stress
+  - graph analytics
+  - synthetic data
+  - supply chain finance
