@@ -1,3 +1,4 @@
-metric,value
-mean_total_tension_top35_borrower,5139.26542857143
-mean_total_tension_top35_operator,2488.8577142857143
+policy,principal_drawn_mrub,principal_repaid_mrub,terminal_debt_mrub,tension_exposure_mrub_periods,peak_system_tension_mrub,mean_uncalibrated_stress_index,tension_exposure_reduction_mrub_periods
+no_credit,0,0,0,3862678.82,397883.3,0.2276942394603846,0.0
+borrower_centric,2500,2500,0,3848156.5799999996,397883.3,0.2276064018719231,14522.240000000224
+graph_score,2500,2500,0,3850913.96,397883.3,0.2268159894026923,11764.85999999987

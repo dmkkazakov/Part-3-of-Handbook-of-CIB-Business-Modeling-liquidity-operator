@@ -1,104 +1,69 @@
 # Corporate Credit as a Liquidity Operator
 
-Synthetic execution-liquidity graph dataset and reproducible code for an SSRN-style working paper.
+Synthetic execution/liquidity schedules and a reproducible comparison of two funding-allocation heuristics. The current implementation replays actual cash arithmetic; it does not insert a preset improvement curve.
 
-## Thesis
+## What is implemented
 
-Corporate credit is not just a product. It is a **temporal liquidity operator** that redistributes cash tension across firms, obligations and execution chains.
+- Firms and directed supplier/buyer invoice links.
+- Fixed stochastic payment schedules, identical under every policy.
+- Signed net liquidity, uncovered funding needs and explicit loan principal.
+- No credit, borrower-score allocation and graph-score allocation.
+- The two funded policies have the same budget, number of recipients, start date and tenor.
+- Regression tests for cash/debt conservation, zero intervention, timing, budget rounding and information cutoff.
 
-The repository provides a synthetic benchmark for testing this idea:
+The graph score combines historical deficit exposure, supplier exposure, out-degree and a synthetic criticality input. It is a ranking heuristic, not an estimate of a marginal causal effect. Payments do not respond endogenously to distress, and funding a supplier does not automatically change a customer's payment. The experiment therefore does **not** establish a network-propagation or graph-causal advantage.
 
-- firms as nodes;
-- supply-chain and payment obligations as edges;
-- cash tension as a dynamic state variable;
-- financing as an intervention operator;
-- bottleneck financing as a graph-aware allocation rule.
+## Reproduce
 
-## Repository structure
-
-```text
-.
-├── data/
-│   ├── raw/
-│   │   ├── firms.csv
-│   │   ├── execution_edges.csv
-│   │   ├── obligations.csv
-│   │   ├── liquidity_timeseries.csv
-│   │   ├── interventions.csv
-│   │   └── simulation_results.csv
-│   └── processed/
-├── docs/
-│   ├── DATA_DICTIONARY.md
-│   └── METHOD_NOTE.md
-├── figures/
-├── src/
-│   ├── generate_synthetic.py
-│   ├── run_baselines.py
-│   └── visualize.py
-├── requirements.txt
-├── CITATION.cff
-└── LICENSE
-```
-
-## Quick start
+Python 3.10 or newer:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-
+python -m unittest discover -s tests -v
 python src/generate_synthetic.py --firms 500 --edges 3200 --periods 26 --seed 42
 python src/run_baselines.py
 python src/visualize.py
 ```
 
-## Dataset summary
+Default settings: 500 firms, 3,200 links, 26 monthly periods numbered 0–25, a separate RUB 2,500 million budget for each funded policy and 35 recipients. Allocation uses only periods before 13. Principal is drawn once in period 13 and repaid in period 19 (six-period tenor). Interest is zero; product-specific fees, collateral, default and refinancing are outside this benchmark. `--budget`, `--targets`, `--decision-period` and `--tenor-periods` change these assumptions.
 
-Default generator creates:
-
-- 500 synthetic firms;
-- 3,200 supplier-buyer execution links;
-- stochastic invoices and payment delays;
-- 26 periods of liquidity states;
-- bottleneck financing interventions;
-- traditional vs execution-aware simulation curves.
-
-## Main variables
-
-### Cash tension
+## Correct financial interpretation
 
 ```text
-T_i(t) = O_i(t) - C_i(t)
+closing_net_liquidity = opening_net_liquidity + scheduled_receipts
+                       - scheduled_outflows + principal_draw - principal_repayment
+closing_debt = opening_debt + principal_draw - principal_repayment
+cash_tension = max(0, -closing_net_liquidity)
 ```
 
-where `O_i(t)` is due obligations and `C_i(t)` is available liquidity.
+Net liquidity can be negative. It records funding still needed, not an authorised overdraft or evidence that unfunded scheduled payments settled. Internal invoice transfers are paired, and external operating outflows reduce system liquidity. The generator does not add external customer receipts, so it deliberately produces a liquidity-depletion stress case. It is not a calibrated model of an actual corporate economy.
 
-### Bottleneck financing
+`cash_tension` is a stock at each date. Its sum over periods measures **deficit exposure in million RUB × periods**; it is not an additional cash expenditure or an amount of money saved. After a zero-interest loan is repaid, net-liquidity paths return to the no-credit path in this model. Unrepaid principal at the reporting horizon is disclosed.
 
-```text
-b* = argmax dR / dF_i
-```
+A logistic transformation is retained as `synthetic_stress_index` for illustration. It has no empirical default calibration and is not a measured collapse probability.
 
-The practical interpretation: lend not automatically to the largest borrower, but to the node whose stabilization restores the largest execution capacity.
+## Result for the documented seed
 
-## Figures
+These numbers are computed from the corrected ledgers in `data/processed/baseline_summary.csv`.
 
-After running `src/visualize.py`, the repository creates:
+| Policy | Principal drawn, million RUB | Principal repaid, million RUB | Reduction in deficit exposure, million RUB × periods |
+|---|---:|---:|---:|
+| No credit | 0.00 | 0.00 | 0.00 |
+| Borrower score | 2,500.00 | 2,500.00 | 14,522.24 |
+| Graph score | 2,500.00 | 2,500.00 | 11,764.86 |
 
-- `figures/cash_tension_propagation.png`
-- `figures/collapse_probability_baseline.png`
-- `figures/top_bottleneck_interventions.png`
+**The graph-score policy does not beat the borrower-score policy on deficit exposure in this run.** The arbitrary stress index gives a different ordering, illustrating metric sensitivity rather than establishing superiority. No parameter search was used to reverse this result. A single synthetic seed cannot support a general policy recommendation.
 
-## Important limitation
+## Files
 
-This is synthetic data. It is useful for reproducibility, method demonstration and publication packaging. It is not a real bank portfolio, not a credit decision engine and not a regulatory model.
+- `data/raw/`: firms, invoice links, obligations, the fixed no-credit schedule, both allocation tables, both funded ledgers and per-period comparisons.
+- `data/raw/experiment_metadata.json`: seed, budget, dates, tenor and modeling boundaries.
+- `data/processed/`: pre-decision scores and measured policy summary.
+- `figures/`: regenerated curves and allocation charts. The historical filename `collapse_probability_baseline.png` is retained, but its content now explicitly shows an **uncalibrated synthetic index**.
+- `docs/METHOD_NOTE.md`, `docs/DATA_DICTIONARY.md`: assumptions and column meanings.
+- `docs/CORRECTIONS.md`: withdrawal of the prior preset-effect comparison and the numerical fixes.
+- `tests/`: invariant and regression checks.
 
-## Citation
-
-Use `CITATION.cff` or cite the repository as:
-
-> Kazakov, D. (2026). Corporate Credit as a Liquidity Operator: Synthetic Execution-Liquidity Graph Dataset.
-
-## License
-
-MIT.
+This repository is a synthetic research demonstration, not a validated credit decision or regulatory model. `CITATION.cff` contains citation metadata. Code and data are licensed under MIT.

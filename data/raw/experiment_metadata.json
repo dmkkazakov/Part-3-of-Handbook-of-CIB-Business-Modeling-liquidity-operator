@@ -1,0 +1,14 @@
+{
+  "seed": 42,
+  "firms": 500,
+  "edges": 3200,
+  "periods": 26,
+  "decision_period": 13,
+  "tenor_periods": 6,
+  "budget_mrub_per_funded_policy": 2500.0,
+  "targets_per_policy": 35,
+  "synthetic": true,
+  "graph_payment_feedback": false,
+  "interest_rate": 0.0,
+  "calibrated_default_probability": false
+}
